@@ -235,7 +235,7 @@
                 }
             }
 
-            session = await ort.InferenceSession.create('okhra_v3.onnx', { executionProviders: ['wasm'] });
+            session = await ort.InferenceSession.create('okhra_v1_ru.onnx', { executionProviders: ['wasm'] });
 
             document.getElementById('checkBtn').innerText = "Check Text";
             document.getElementById('checkBtn').disabled = false;
