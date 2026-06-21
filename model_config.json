@@ -1,0 +1,7 @@
+{
+    "threshold": 0.4341, 
+    "pad_idx": 0,
+    "unk_idx": 1,
+    "max_len": 192,
+    "min_seq_len": 20
+}
