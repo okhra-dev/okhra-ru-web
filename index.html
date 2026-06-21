@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Okhra V3 (Russian)</title>
+    <title>Okhra-RU V1</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
@@ -19,6 +19,7 @@
         --ai-color: #dc2626;
         --human-color: #16a34a;
         --mixed-color: #ea580c;
+        --mixed-yellow: #ca8a04;
     }
     body {
         font-family: "Lato", sans-serif;
@@ -389,7 +390,7 @@
             const logits = results.output.data;
 
             let probs = [];
-            let hasHighProbChunk = false;
+            let aiChunkCount = 0;
             let weightedSum = 0;
             let totalWeight = 0;
 
@@ -398,7 +399,7 @@
                 probs.push(p);
                 weightedSum += p * chunkLengths[i];
                 totalWeight += chunkLengths[i];
-                if (p > 0.7) hasHighProbChunk = true;
+                if (p > config.threshold) aiChunkCount++;
             }
             let avgProb = weightedSum / totalWeight;
 
@@ -409,9 +410,10 @@
             if (avgProb > threshold) {
                 verdictEl.innerText = "AI Generated";
                 verdictEl.style.color = "var(--ai-color)";
-            } else if (hasHighProbChunk) {
-                verdictEl.innerText = "Mixed";
-                verdictEl.style.color = "var(--mixed-color)";
+            } else if (aiChunkCount > 0) {
+                let percent = Math.round((aiChunkCount / numChunks) * 100);
+                verdictEl.innerText = `MIXED (${percent}% AI)`;
+                verdictEl.style.color = "var(--mixed-yellow)";
             } else {
                 verdictEl.innerText = "Human Written";
                 verdictEl.style.color = "var(--human-color)";
