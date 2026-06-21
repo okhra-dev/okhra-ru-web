@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Okhra V3 (Russian)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+<style>
+    :root {
+        --bg-color: #fafafa;
+        --panel-bg: #f0f0f0;
+        --border-color: #c0c0c0;
+        --text-color: #222222;
+        --accent-color: #444444;
+        --btn-hover: #000000;
+        --ai-color: #dc2626;
+        --human-color: #16a34a;
+        --mixed-color: #ea580c;
+    }
+    body {
+        font-family: "Lato", sans-serif;
+        font-weight: 400;
+        font-style: normal;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0 auto;
+        padding: 40px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        max-width: 1200px;
+        line-height: 1.5;
+    }
+    .top-nav {
+        width: 100%;
+        display: flex;
+        gap: 30px;
+        padding-bottom: 20px;
+        margin-bottom: 40px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .top-nav a {
+        text-decoration: none;
+        color: var(--text-color);
+        font-size: 0.9em;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        transition: opacity 0.2s;
+    }
+    .top-nav a:hover { opacity: 0.6; }
+    .top-nav a.active {
+        font-weight: 900;
+        border-bottom: 2px solid var(--text-color);
+        padding-bottom: 2px;
+    }
+    h1 {
+        color: var(--text-color);
+        margin-bottom: 5px;
+        font-size: 2.5em;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+    }
+    p.subtitle {
+        margin-top: 0;
+        font-size: 1.1em;
+        font-weight: 400;
+        color: #666666;
+        margin-bottom: 40px;
+        text-align: left;
+    }
+    .container {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 20px;
+    }
+    .panel {
+        flex: 1;
+        min-width: 300px;
+        height: 600px;
+        background-color: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+    }
+    textarea {
+        width: 100%;
+        flex-grow: 1;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
+        font-family: inherit;
+        font-size: 14px;
+        padding: 15px;
+        border-radius: 0;
+        resize: none;
+        box-sizing: border-box;
+        overflow-y: auto;
+        line-height: 1.6;
+    }
+    textarea:focus {
+        outline: none;
+        border-color: var(--accent-color);
+    }
+    button {
+        background-color: var(--accent-color);
+        color: #fff;
+        border: none;
+        padding: 12px 20px;
+        font-size: 16px;
+        font-family: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        border-radius: 0;
+        margin-top: 15px;
+        transition: background 0.2s;
+        flex-shrink: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    button:hover { background-color: var(--btn-hover); }
+    button:disabled {
+        background-color: var(--border-color);
+        cursor: not-allowed;
+    }
+    #verdictBox {
+        text-align: center;
+        padding: 15px;
+        font-size: 1.4em;
+        font-weight: 900;
+        border-radius: 0;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        margin-bottom: 15px;
+        flex-shrink: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    #coloredText {
+        flex-grow: 1;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        padding: 15px;
+        border-radius: 0;
+        font-size: 14px;
+        font-weight: 400;
+        white-space: pre-wrap;
+        overflow-y: auto;
+        line-height: 1.6;
+        height: 0;
+    }
+    .chunk { border-radius: 0; }
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+    <a href="https://okhra.neocities.org">About</a>
+    <a href="https://okhra-dev.github.io/okhra-web" class="active">AI detector</a>
+    <a href="https://okhra.neocities.org/research">Research</a>
+    <a href="https://okhra.neocities.org/contact">Contact</a>
+</nav>
+
+<h1>Okhra-RU V1 (open beta)</h1>
+<p class="subtitle">Быстрый детектор ИИ для русского языка. Текст обрабатывается локально в вашем браузере.</p>
+
+<div class="container">
+    <div class="panel">
+        <textarea id="inputText" placeholder="Вставьте текст для анализа..."></textarea>
+        <button id="checkBtn" disabled>Loading Model...</button>
+    </div>
+    <div class="panel right-panel">
+        <div id="verdictBox">Waiting for input...</div>
+        <div id="coloredText">Вывод появится здесь. Фрагменты, сгенерированные ИИ, будут выделены красным.</div>
+    </div>
+</div>
+
+<script>
+    let session = null;
+    let config = null;
+    let vocab = null;
+    let mergeRanks = null;
+
+    function escapeHTML(str) {
+        return str.replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+        });
+    }
+
+    async function init() {
+        try {
+            const configRes = await fetch('model_config.json');
+            config = await configRes.json();
+
+            const tokRes = await fetch('tokenizer.json');
+            const tokData = await tokRes.json();
+            
+            vocab = tokData.model.vocab;
+            const merges = tokData.model.merges;
+            
+            mergeRanks = {};
+            for (let i = 0; i < merges.length; i++) {
+                // merges in HF tokenizers are space-separated strings like "a b"
+                let parts = merges[i].split(' ');
+                if (parts.length === 2) {
+                    let merged = parts[0] + parts[1];
+                    mergeRanks[merged] = i;
+                }
+            }
+
+            session = await ort.InferenceSession.create('okhra_v3.onnx', { executionProviders: ['wasm'] });
+
+            document.getElementById('checkBtn').innerText = "Check Text";
+            document.getElementById('checkBtn').disabled = false;
+        } catch (e) {
+            console.error(e);
+            document.getElementById('checkBtn').innerText = "Error loading model!";
+            document.getElementById('verdictBox').innerText = "Check browser console for errors.";
+        }
+    }
+
+    function sigmoid(z) {
+        return 1 / (1 + Math.exp(-z));
+    }
+
+    function getPairs(word) {
+        let pairs = [];
+        for (let i = 0; i < word.length - 1; i++) {
+            pairs.push(word[i] + word[i + 1]);
+        }
+        return pairs;
+    }
+
+    function bpeTokenize(wordStr, startIdx) {
+        let chars = Array.from(wordStr);
+        if (chars.length === 0) return [];
+        
+        if (chars.length === 1) {
+            let id = vocab[chars[0]] !== undefined ? vocab[chars[0]] : config.unk_idx;
+            return [{ id: id, start: startIdx, end: startIdx + chars[0].length }];
+        }
+        
+        let word = chars.slice();
+        while (true) {
+            let pairs = getPairs(word);
+            let minRank = Infinity;
+            let minPair = null;
+            
+            for (let pair of pairs) {
+                let rank = mergeRanks[pair];
+                if (rank !== undefined && rank < minRank) {
+                    minRank = rank;
+                    minPair = pair;
+                }
+            }
+            
+            if (minPair === null) break;
+            
+            let newWord = [];
+            let i = 0;
+            while (i < word.length) {
+                if (i < word.length - 1 && word[i] + word[i + 1] === minPair) {
+                    newWord.push(minPair);
+                    i += 2;
+                } else {
+                    newWord.push(word[i]);
+                    i += 1;
+                }
+            }
+            word = newWord;
+            if (word.length === 1) break;
+        }
+        
+        let tokens = [];
+        let currentIdx = startIdx;
+        for (let w of word) {
+            let id = vocab[w] !== undefined ? vocab[w] : config.unk_idx;
+            tokens.push({
+                id: id,
+                start: currentIdx,
+                end: currentIdx + w.length
+            });
+            currentIdx += w.length;
+        }
+        return tokens;
+    }
+
+    async function analyzeText() {
+        if (!session || !config || !vocab) return;
+        const text = document.getElementById('inputText').value;
+        if (text.trim().length === 0) return;
+
+        // Word count using Unicode regex
+        const wordCount = (text.match(/[\p{L}\p{N}]+/gu) || []).length;
+        if (wordCount < 15) {
+            let verdictEl = document.getElementById('verdictBox');
+            verdictEl.innerText = "Text too short";
+            verdictEl.style.color = "var(--text-color)";
+            document.getElementById('coloredText').innerText = "Please input at least 20 words";
+            return;
+        }
+
+        document.getElementById('checkBtn').innerText = "Analyzing...";
+        document.getElementById('checkBtn').disabled = true;
+
+        try {
+            // --- Tokenize ---
+            // Splits into words and punctuation using Unicode properties
+            const tokenRegex = /[\p{L}\p{N}]+|[^\p{L}\p{N}\s]+/gu;
+            let match;
+            let tokens = [];
+
+            // Lowercase the text assuming a Lowercase normalizer was used
+            const lowerText = text.toLowerCase();
+
+            while ((match = tokenRegex.exec(lowerText)) !== null) {
+                let word = match[0];
+                // Map match index back to original text length? No, lowerText.length == text.length for these chars.
+                // But if text has uppercase, lowerText is same length. startIdx is match.index.
+                let startIdx = match.index;
+                
+                let bpeTokens = bpeTokenize(word, startIdx);
+                tokens.push(...bpeTokens);
+            }
+
+            if (tokens.length === 0) {
+                resetUI();
+                return;
+            }
+
+            // --- Chunking (matches non-overlapping logic) ---
+            let maxLen = config.max_len;
+            let starts = [];
+
+            for (let s = 0; s < tokens.length; s += maxLen) {
+                let len = Math.min(maxLen, tokens.length - s);
+                if (len >= 15) { // Drop tail if too short
+                    starts.push(s);
+                }
+            }
+            if (starts.length === 0) {
+                starts.push(0); // Fallback if all chunks were somehow too short
+            }
+
+            let numChunks = starts.length;
+            let chunkLengths = [];
+            let flatArray = new BigInt64Array(numChunks * maxLen);
+            flatArray.fill(BigInt(config.pad_idx));
+
+            for (let c = 0; c < numChunks; c++) {
+                let chunkStart = starts[c];
+                let len = Math.min(maxLen, tokens.length - chunkStart);
+                chunkLengths.push(len);
+                for (let i = 0; i < len; i++) {
+                    flatArray[c * maxLen + i] = BigInt(tokens[chunkStart + i].id);
+                }
+            }
+
+            // --- Run model ---
+            const inputTensor = new ort.Tensor('int64', flatArray, [numChunks, maxLen]);
+            const results = await session.run({ input: inputTensor });
+            const logits = results.output.data;
+
+            let probs = [];
+            let hasHighProbChunk = false;
+            let weightedSum = 0;
+            let totalWeight = 0;
+
+            for (let i = 0; i < numChunks; i++) {
+                let p = sigmoid(logits[i]);
+                probs.push(p);
+                weightedSum += p * chunkLengths[i];
+                totalWeight += chunkLengths[i];
+                if (p > 0.7) hasHighProbChunk = true;
+            }
+            let avgProb = weightedSum / totalWeight;
+
+            let threshold = config.threshold;
+
+            // --- Verdict ---
+            let verdictEl = document.getElementById('verdictBox');
+            if (avgProb > threshold) {
+                verdictEl.innerText = "AI Generated";
+                verdictEl.style.color = "var(--ai-color)";
+            } else if (hasHighProbChunk) {
+                verdictEl.innerText = "Mixed";
+                verdictEl.style.color = "var(--mixed-color)";
+            } else {
+                verdictEl.innerText = "Human Written";
+                verdictEl.style.color = "var(--human-color)";
+            }
+
+            // --- Render highlighted text ---
+            let charProbs = new Float32Array(text.length);
+
+            for (let c = 0; c < numChunks; c++) {
+                let startTokenIdx = starts[c];
+                let endTokenIdx = Math.min(starts[c] + maxLen, tokens.length) - 1;
+
+                let chunkStartChar = tokens[startTokenIdx].start;
+                let chunkEndChar = tokens[endTokenIdx].end;
+
+                let prob = probs[c];
+                for (let ci = chunkStartChar; ci < chunkEndChar; ci++) {
+                    charProbs[ci] = Math.max(charProbs[ci], prob);
+                }
+            }
+
+            let renderedHtml = "";
+            let i = 0;
+            while (i < text.length) {
+                let isHighlighted = charProbs[i] > threshold;
+                let j = i;
+                while (j < text.length && (charProbs[j] > threshold) === isHighlighted) {
+                    j++;
+                }
+
+                let segment = text.substring(i, j);
+                if (isHighlighted) {
+                    let maxP = 0;
+                    for (let k = i; k < j; k++) maxP = Math.max(maxP, charProbs[k]);
+                    let intensity = Math.min(1.0, (maxP - threshold) / (1.0 - threshold));
+                    let alpha = intensity * 0.6 + 0.15;
+                    renderedHtml += `<span class="chunk" style="background-color: rgba(220, 50, 50, ${alpha});">${escapeHTML(segment)}</span>`;
+                } else {
+                    renderedHtml += `<span>${escapeHTML(segment)}</span>`;
+                }
+                i = j;
+            }
+
+            document.getElementById('coloredText').innerHTML = renderedHtml;
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById('verdictBox').innerText = "An error occurred during analysis.";
+        }
+
+        document.getElementById('checkBtn').innerText = "Check Text";
+        document.getElementById('checkBtn').disabled = false;
+    }
+
+    function resetUI() {
+        document.getElementById('checkBtn').innerText = "Check";
+        document.getElementById('checkBtn').disabled = false;
+        document.getElementById('verdictBox').innerText = "Waiting for input...";
+        document.getElementById('verdictBox').style.color = "inherit";
+        document.getElementById('coloredText').innerHTML = "Вывод появится здесь. Фрагменты, сгенерированные ИИ, будут выделены красным.";
+    }
+
+    document.getElementById('checkBtn').addEventListener('click', analyzeText);
+    window.onload = init;
+</script>
+</body>
+</html>
