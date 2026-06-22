@@ -1,5 +1,5 @@
 {
-    "threshold": 0.3717, 
+    "threshold": 0.2946, 
     "pad_idx": 0,
     "unk_idx": 1,
     "max_len": 192,
