@@ -410,7 +410,7 @@
             if (avgProb > threshold) {
                 verdictEl.innerText = "AI Generated";
                 verdictEl.style.color = "var(--ai-color)";
-            } else if (aiChunkCount > 0) {
+            } else if ((aiChunkCount / numChunks) > 0.15) {
                 let percent = Math.round((aiChunkCount / numChunks) * 100);
                 verdictEl.innerText = `MIXED (${percent}% AI)`;
                 verdictEl.style.color = "var(--mixed-yellow)";
